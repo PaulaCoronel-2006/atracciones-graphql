@@ -25,10 +25,10 @@ public class CatalogClient
                 PropertyNameCaseInsensitive = true
             };
 
-            var response = await _httpClient.GetFromJsonAsync<CatalogPagedResult>("catalog/attraction", options);
-            if (response?.Items == null) return [];
+            var response = await _httpClient.GetFromJsonAsync<CatalogSearchResponse>("catalog/attraction", options);
+            if (response?.Data?.Items == null) return [];
 
-            return response.Items.Select(item => new AttractionDto
+            return response.Data.Items.Select(item => new AttractionDto
             {
                 Id = item.Id,
                 Nombre = item.Name,
@@ -55,9 +55,10 @@ public class CatalogClient
                 PropertyNameCaseInsensitive = true
             };
 
-            var detail = await _httpClient.GetFromJsonAsync<CatalogDetailResponseDto>($"catalog/attraction/{id}", options);
-            if (detail == null) return null;
+            var response = await _httpClient.GetFromJsonAsync<CatalogDetailResponseWrapper>($"catalog/attraction/{id}", options);
+            if (response?.Data == null) return null;
 
+            var detail = response.Data;
             var mainImage = detail.Gallery.FirstOrDefault(g => g.IsMain)?.Url 
                          ?? detail.Gallery.FirstOrDefault()?.Url;
 
@@ -87,6 +88,18 @@ public class CatalogClient
             Console.WriteLine($"Error al consultar atracción por ID {id}: {ex.Message}");
             return null;
         }
+    }
+
+    private class CatalogSearchResponse
+    {
+        public bool Success { get; set; }
+        public CatalogPagedResult? Data { get; set; }
+    }
+
+    private class CatalogDetailResponseWrapper
+    {
+        public bool Success { get; set; }
+        public CatalogDetailResponseDto? Data { get; set; }
     }
 
     private class CatalogPagedResult
