@@ -24,6 +24,7 @@ public record AttractionDto
     public string Moneda { get; init; } = "USD";
     public string Ubicacion { get; init; } = string.Empty;
     public string? ImagenUrl { get; init; }
+    public string Slug { get; init; } = string.Empty;
 }
 
 public record InvoiceDto

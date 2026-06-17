@@ -31,7 +31,8 @@ public class CatalogClient
                 Precio = item.StartingPrice ?? 0,
                 Moneda = item.CurrencyCode,
                 Ubicacion = item.LocationName,
-                ImagenUrl = item.MainImageUrl
+                ImagenUrl = item.MainImageUrl,
+                Slug = item.Slug
             }).ToList();
         }
         catch
@@ -73,6 +74,7 @@ public class CatalogClient
         public string CurrencyCode { get; set; } = "USD";
         public string LocationName { get; set; } = string.Empty;
         public string? MainImageUrl { get; set; }
+        public string Slug { get; set; } = string.Empty;
     }
 }
 
