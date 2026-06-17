@@ -21,7 +21,18 @@ public class CatalogClient
         try
         {
             var response = await _httpClient.GetFromJsonAsync<CatalogResponse>("catalog/attraction");
-            return response?.Data?.Items ?? [];
+            if (response?.Data?.Items == null) return [];
+
+            return response.Data.Items.Select(item => new AttractionDto
+            {
+                Id = item.Id,
+                Nombre = item.Name,
+                Descripcion = item.DescriptionShort,
+                Precio = item.StartingPrice ?? 0,
+                Moneda = item.CurrencyCode,
+                Ubicacion = item.LocationName,
+                ImagenUrl = item.MainImageUrl
+            }).ToList();
         }
         catch
         {
@@ -50,7 +61,18 @@ public class CatalogClient
 
     private class CatalogData
     {
-        public List<AttractionDto> Items { get; set; } = [];
+        public List<CatalogAttractionDto> Items { get; set; } = [];
+    }
+
+    private class CatalogAttractionDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? DescriptionShort { get; set; }
+        public decimal? StartingPrice { get; set; }
+        public string CurrencyCode { get; set; } = "USD";
+        public string LocationName { get; set; } = string.Empty;
+        public string? MainImageUrl { get; set; }
     }
 }
 
