@@ -94,7 +94,7 @@ public class BookingClient
 
             string endpoint = isAdminOrPartner ? "admin-booking/management" : "admin-booking/user/history";
             var response = await _httpClient.GetFromJsonAsync<BookingSearchResponse>(endpoint);
-            return response?.Items ?? [];
+            return response?.Data?.Items ?? [];
         }
         catch
         {
@@ -107,8 +107,8 @@ public class BookingClient
         try
         {
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            var response = await _httpClient.GetFromJsonAsync<BookingDto>($"admin-booking/detail/{id}");
-            return response;
+            var response = await _httpClient.GetFromJsonAsync<BookingDetailWrapper>($"admin-booking/detail/{id}");
+            return response?.Data;
         }
         catch
         {
@@ -118,7 +118,19 @@ public class BookingClient
 
     private class BookingSearchResponse
     {
+        public bool Success { get; set; }
+        public PagedBookingData? Data { get; set; }
+    }
+
+    private class PagedBookingData
+    {
         public List<BookingDto> Items { get; set; } = [];
+    }
+
+    private class BookingDetailWrapper
+    {
+        public bool Success { get; set; }
+        public BookingDto? Data { get; set; }
     }
 }
 
