@@ -20,10 +20,15 @@ public class CatalogClient
     {
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<CatalogResponse>("catalog/attraction");
-            if (response?.Data?.Items == null) return [];
+            var options = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
 
-            return response.Data.Items.Select(item => new AttractionDto
+            var response = await _httpClient.GetFromJsonAsync<CatalogPagedResult>("catalog/attraction", options);
+            if (response?.Items == null) return [];
+
+            return response.Items.Select(item => new AttractionDto
             {
                 Id = item.Id,
                 Nombre = item.Name,
@@ -45,24 +50,77 @@ public class CatalogClient
     {
         try
         {
-            var attractions = await GetAttractionsAsync();
-            return attractions.FirstOrDefault(a => a.Id == id);
+            var options = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var detail = await _httpClient.GetFromJsonAsync<CatalogDetailResponseDto>($"catalog/attraction/{id}", options);
+            if (detail == null) return null;
+
+            var mainImage = detail.Gallery.FirstOrDefault(g => g.IsMain)?.Url 
+                         ?? detail.Gallery.FirstOrDefault()?.Url;
+
+            decimal minPrice = 0;
+            string currency = "USD";
+            var prices = detail.Products.SelectMany(p => p.PriceTiers).ToList();
+            if (prices.Any())
+            {
+                minPrice = prices.Min(p => p.Price);
+                currency = prices.First().CurrencyCode;
+            }
+
+            return new AttractionDto
+            {
+                Id = detail.Id,
+                Nombre = detail.Name,
+                Descripcion = detail.DescriptionShort,
+                Precio = minPrice,
+                Moneda = currency,
+                Ubicacion = detail.LocationName,
+                ImagenUrl = mainImage,
+                Slug = detail.Slug
+            };
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"Error al consultar atracción por ID {id}: {ex.Message}");
             return null;
         }
     }
 
-    private class CatalogResponse
-    {
-        public bool Success { get; set; }
-        public CatalogData? Data { get; set; }
-    }
-
-    private class CatalogData
+    private class CatalogPagedResult
     {
         public List<CatalogAttractionDto> Items { get; set; } = [];
+        public int TotalCount { get; set; }
+    }
+
+    private class CatalogDetailResponseDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? DescriptionShort { get; set; }
+        public string Slug { get; set; } = string.Empty;
+        public string LocationName { get; set; } = string.Empty;
+        public List<CatalogMediaDto> Gallery { get; set; } = [];
+        public List<CatalogProductDto> Products { get; set; } = [];
+    }
+
+    private class CatalogMediaDto
+    {
+        public string Url { get; set; } = string.Empty;
+        public bool IsMain { get; set; }
+    }
+
+    private class CatalogProductDto
+    {
+        public List<CatalogPriceTierDto> PriceTiers { get; set; } = [];
+    }
+
+    private class CatalogPriceTierDto
+    {
+        public decimal Price { get; set; }
+        public string CurrencyCode { get; set; } = "USD";
     }
 
     private class CatalogAttractionDto
